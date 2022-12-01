@@ -1,0 +1,51 @@
+---
+title: "602 Group Project Analysis"
+format: html
+editor: visual
+---
+```{r}
+library(tidyverse)
+```
+
+```{r}
+survey_results <- read_csv("mTurk_602_fa22.csv")
+```
+```{r}
+group_7 <- survey_results %>% select(Q24, "Partisan ID", Q42, Q5_1, Q5_2, Q5_3, academicresume, LocationLatitude, LocationLongitude, ResponseId, RecordedDate)
+
+group_7$Q5_1[group_7$Q5_1 == "Very Strong\n7"] <- 7
+group_7$Q5_2[group_7$Q5_2 == "Very Strong\n7"] <- 7
+group_7$Q5_3[group_7$Q5_3 == "Very Strong\n7"] <- 7
+
+group_7$Q5_1[group_7$Q5_1 == "Very Weak\n1"] <- 1
+group_7$Q5_2[group_7$Q5_2 == "Very Weak\n1"] <- 1
+group_7$Q5_3[group_7$Q5_3 == "Very Weak\n1"] <- 1
+
+group_7$academicresume[group_7$academicresume == '<img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_aYrAAmFQezBzaYK">'] <- "male_resume"
+group_7$academicresume[group_7$academicresume == '<img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_0p7NxWEoIZ5mLXM">'] <- "female_resume"
+
+group_7 <- tail(group_7, -2)
+
+colnames(group_7) <- c('age', 'partisan_id', 'education_level', 'skills_hard', 'skills_leadership', 'skills_interview', 'treatment_group', 'location_lat', 'location_long', 'response_id', 'recorded_date')
+
+as.factor(group_7$skills_hard)
+as.factor(group_7$skills_leadership)
+as.factor(group_7$skills_interview)
+
+
+#male resume: <img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_aYrAAmFQezBzaYK">
+#female resume: <img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_0p7NxWEoIZ5mLXM">
+
+group_7
+
+#Q24: what is your age
+
+#Watch out for Row 51
+
+# q5_1; hard skills, q5_2, leadership skills, q5_3: interview_skills
+```
+```{r}
+fit <- (lm(skills_interview ~ treatment_group + education_level, data = group_7))
+summary(fit)
+```
+

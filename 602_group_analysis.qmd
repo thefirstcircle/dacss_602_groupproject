@@ -3,6 +3,7 @@ title: "602 Group Project Analysis"
 format: html
 editor: visual
 ---
+
 ```{r}
 library(tidyverse)
 ```
@@ -10,9 +11,11 @@ library(tidyverse)
 ```{r}
 survey_results <- read_csv("mTurk_602_fa22.csv")
 ```
-```{r}
-group_7 <- survey_results %>% select(Q24, "Partisan ID", Q42, Q5_1, Q5_2, Q5_3, academicresume, LocationLatitude, LocationLongitude, ResponseId, RecordedDate)
 
+```{r}
+group_7 <- survey_results %>% select(Q24, Q23, "Partisan ID", Q42, Q5_1, Q5_2, Q5_3, academicresume)
+
+#Transform likert responses to numeric
 group_7$Q5_1[group_7$Q5_1 == "Very Strong\n7"] <- 7
 group_7$Q5_2[group_7$Q5_2 == "Very Strong\n7"] <- 7
 group_7$Q5_3[group_7$Q5_3 == "Very Strong\n7"] <- 7
@@ -21,31 +24,64 @@ group_7$Q5_1[group_7$Q5_1 == "Very Weak\n1"] <- 1
 group_7$Q5_2[group_7$Q5_2 == "Very Weak\n1"] <- 1
 group_7$Q5_3[group_7$Q5_3 == "Very Weak\n1"] <- 1
 
-group_7$academicresume[group_7$academicresume == '<img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_aYrAAmFQezBzaYK">'] <- "male_resume"
-group_7$academicresume[group_7$academicresume == '<img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_0p7NxWEoIZ5mLXM">'] <- "female_resume"
+#male resume = 0
+group_7$academicresume[group_7$academicresume == '<img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_aYrAAmFQezBzaYK">'] <- 0
+#female resume = 1
+group_7$academicresume[group_7$academicresume == '<img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_0p7NxWEoIZ5mLXM">'] <- 1
 
+#remove the first two rows, which are not necessary
 group_7 <- tail(group_7, -2)
 
-colnames(group_7) <- c('age', 'partisan_id', 'education_level', 'skills_hard', 'skills_leadership', 'skills_interview', 'treatment_group', 'location_lat', 'location_long', 'response_id', 'recorded_date')
+#rename columns as appropriate
+colnames(group_7) <- c('respondent_age', 'respondent_gender', 'respondent_partisan_id', 'respondent_education_level', 'skills_hard', 'skills_leadership', 'skills_interview', 'treatment_group')
 
-as.factor(group_7$skills_hard)
-as.factor(group_7$skills_leadership)
-as.factor(group_7$skills_interview)
+#cast columns to 'numeric' for later t-test
+group_7 <- group_7 %>% mutate_at(c('skills_hard', 'skills_leadership', 'skills_interview', 'treatment_group'), as.numeric)
+  
+#create scales for ordinal data
+group_7 <- group_7 %>% mutate(respondent_education_leve = recode(
+                            respondent_education_level, 
+                                  `High School` = 0,
+                                  `Some College coursework` = 1,
+                                  `Associate's Degree` =  2,
+                                  `Bachelor's Degree` = 3,
+                                  `Master's or PhD` = 4))
 
-
-#male resume: <img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_aYrAAmFQezBzaYK">
-#female resume: <img src="https://umassamherst.co1.qualtrics.com/ControlPanel/Graphic.php?IM=IM_0p7NxWEoIZ5mLXM">
+group_7 <- group_7 %>% mutate(respondent_age = recode(
+                            respondent_age, 
+                                  `26 - 35`	= 0,
+                                  `46 - 55` = 1,
+                                  `18 - 25` = 2,
+                                  `36 - 45` = 3,
+                                  `56 or older` = 4))
 
 group_7
 
-#Q24: what is your age
+#Watch out for 51
 
-#Watch out for Row 51
 
-# q5_1; hard skills, q5_2, leadership skills, q5_3: interview_skills
+```
+
+## EDA
+
+## Hypothesis testing
+
+```{r}
+#Welch's t-test
+
+t.test(skills_hard ~ treatment_group, data = group_7)
+t.test(skills_leadership ~ treatment_group, data = group_7)
+t.test(skills_interview ~ treatment_group, data = group_7)
+```
+Or another way,
+
+```{r}
+summary(glm(skills_hard ~ treatment_group, data = group_7))
+summary(glm(skills_leadership ~ treatment_group, data = group_7))
+summary(glm(skills_interview ~ treatment_group, data = group_7))
 ```
 ```{r}
-fit <- (lm(skills_interview ~ treatment_group + education_level, data = group_7))
-summary(fit)
+summary(glm(skills_hard ~ treatment_group + respondent_partisan_id + treatment_group*respondent_partisan_id, data = group_7))
+summary(glm(skills_leadership ~ treatment_group + respondent_partisan_id + treatment_group*respondent_partisan_id, data = group_7))
+summary(glm(skills_interview ~ treatment_group + respondent_partisan_id + treatment_group*respondent_partisan_id, data = group_7))
 ```
-
